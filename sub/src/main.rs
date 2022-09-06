@@ -19,7 +19,7 @@ use futures::select;
 use std::time::Duration;
 use std::time::SystemTime;
 use zenoh::config::Config;
-
+use zenoh::prelude::r#async::*;
 #[async_std::main]
 async fn main() {
     // Initiate logging
@@ -28,11 +28,11 @@ async fn main() {
     let (config, key_expr) = parse_args();
 
     println!("Opening session...");
-    let session = zenoh::open(config).await.unwrap();
+    let session = zenoh::open(config).res().await.unwrap();
 
     println!("Creating Subscriber on '{}'...", key_expr);
 
-    let mut subscriber = session.subscribe(&key_expr).await.unwrap();
+    let subscriber = session.declare_subscriber(&key_expr).res().await.unwrap();
 
     println!("Enter 'q' to quit...");
     let mut stdin = async_std::io::stdin();
@@ -42,7 +42,7 @@ async fn main() {
 
     loop {
         select!(
-            sample = subscriber.next() => {
+            sample = subscriber.recv_async() => {
                 let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs_f64();
 
                 let _sample = sample.unwrap();
@@ -84,7 +84,7 @@ fn parse_args() -> (Config, String) {
         ))
         .arg(
             Arg::from_usage("-k, --key=[KEYEXPR] 'The key expression to subscribe to.'")
-                .default_value("/demo/example/**"),
+                .default_value("demo/example/**"),
         )
         .arg(Arg::from_usage(
             "-c, --config=[FILE]      'A configuration file.'",

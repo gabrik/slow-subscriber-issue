@@ -16,7 +16,7 @@ use std::time::{Duration, SystemTime};
 use zenoh::config::Config;
 use zenoh::prelude::*;
 use zenoh::publication::CongestionControl;
-
+use zenoh::prelude::sync::*;
 fn main() {
     // initiate logging
     env_logger::init();
@@ -27,9 +27,9 @@ fn main() {
         .collect::<Vec<u8>>()
         .into();
 
-    let session = zenoh::open(config).wait().unwrap();
+    let session = zenoh::open(config).res().unwrap();
 
-    let key_expr = session.declare_expr(&ke).wait().unwrap();
+    let key_expr = session.declare_keyexpr(&ke).res().unwrap();
 
     let sleep_time = 1.0 / rate as f64;
 
@@ -46,7 +46,7 @@ fn main() {
             // Make sure to not drop messages because of congestion control
             .congestion_control(CongestionControl::Drop)
             // Set the right priority
-            .wait()
+            .res()
             .unwrap();
 
         let elapsed = now - last;
@@ -67,7 +67,7 @@ fn parse_args() -> (Config, usize, String, usize) {
         )
         .arg(
             Arg::from_usage("-k, --key=[KEYEXPR]        'The key expression to publish onto.'")
-                .default_value("/demo/example/zenoh-rs-pub"),
+                .default_value("demo/example/zenoh-rs-pub"),
         )
         .arg(
             Arg::from_usage("-r, --rate=[RATE]        'Number of message/second to send'")
